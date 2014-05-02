@@ -48,7 +48,7 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  -- exposed-modules:     
+  exposed-modules:    Moonbase.Panel.Gtk
   
   -- Modules included in this library but not exported.
   -- other-modules:       
@@ -58,9 +58,15 @@ library
   
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.6 && <4.7
+                     , containers >= 0.5.0.0
+                     , mtl >= 2.1.2
+                     , gtk3 >= 0.12.5.6
+                     , dbus >= 0.10.7
+                     , moonbase >= 0.1.0.0
+                     , xdg >= 0.1.0.0
   
   -- Directories containing source files.
-  -- hs-source-dirs:      
+  hs-source-dirs:      src/
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
