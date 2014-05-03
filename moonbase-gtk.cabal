@@ -49,13 +49,15 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:    Moonbase.Panel.Gtk
+                    , Moonbase.Hook.Gtk
+                    , Moonbase.Util.Color
   
   -- Modules included in this library but not exported.
   -- other-modules:       
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    
-  
+  ghc-options: -O3 -threaded
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.6 && <4.7
                      , containers >= 0.5.0.0
