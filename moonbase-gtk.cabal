@@ -59,7 +59,7 @@ library
   -- other-extensions:    
   ghc-options: -O3 -threaded
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.6 && <4.7
+  build-depends:       base >=4.6 && <4.8
                      , containers >= 0.5.0.0
                      , mtl >= 2.1.2
                      , gtk3 >= 0.12.5.6
