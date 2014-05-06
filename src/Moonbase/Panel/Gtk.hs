@@ -4,13 +4,16 @@ module Moonbase.Panel.Gtk
     ( PanelPosition(..)
     , Color
     , PanelItem(..)
+    , ItemWidth(..)
     , Item(..)
     , PanelConfig(..)
     , GtkPanel(..)
     , gtkPanel
+    , sampleItem
     ) where
 
---import Control.Applicative
+import Control.Monad
+import Control.Applicative
 --import Control.Monad.Reader
 --import Control.Monad.State
 
@@ -26,26 +29,40 @@ data PanelPosition = Top
                    | Bottom
                    | Custom Int
 
+data ItemWidth = Max
+               | Size Int
+
 class PanelItem a where
-    stateInit :: Moonbase a
-    init :: a -> Moonbase a
-    show :: a -> Moonbase ()
+    initItem :: a -> Moonbase (a, Widget)
+    getWidget :: a -> Widget
 
-data Item = forall a. (PanelItem a) => Item String a
+data Item = forall a. (PanelItem a) => Item Name ItemWidth a
 
-data ItemState = forall a. ItemState a
+data SampleItem = SampleItem String (Maybe Label)
 
+instance PanelItem SampleItem where
+    initItem (SampleItem n _)  = do
+        l <- io $ labelNew (Just n)
+        return (SampleItem n (Just l), toWidget l)
+    getWidget (SampleItem _ (Just l)) = toWidget l
 
-
+sampleItem :: String -> ItemWidth -> Item
+sampleItem n w = Item n w (SampleItem n Nothing)
+        
+        
+        
+    
 data PanelState = PanelState 
-  { itemStates :: M.Map String ItemState
+  { itms :: M.Map String Item
   , panel :: Maybe Window
+  , hbox :: Maybe HBox
   }
 
 emptyState :: PanelState
 emptyState = PanelState
-  { itemStates = M.empty
+  { itms = M.empty
   , panel = Nothing
+  , hbox  = Nothing
   }
 
 
@@ -73,7 +90,41 @@ instance StartStop GtkPanel where
 instance Requires GtkPanel where
     requires _ = [gtkInit, gtkMain, gtkQuit]
 
+setPanelSize :: Rectangle -> Int -> Window -> Moonbase ()
+setPanelSize
+    (Rectangle _ _ w _) h win = io $ do
+        windowSetDefaultSize win w h
+        windowSetGeometryHints win no size size Nothing Nothing Nothing
+        where
+            no   = Nothing :: Maybe Widget
+            size = Just (w, h)
 
+setPanelPosition :: Rectangle -> Int -> PanelPosition -> Window -> Moonbase ()
+setPanelPosition
+    _ _ Top win = io $ windowMove win 0 0 
+setPanelPosition
+    (Rectangle _  _  _ h) hi Bottom win = io $ windowMove win 0 (h - hi)
+
+panelAddItems :: [Item] -> Int -> HBox -> Moonbase (M.Map Name Item)
+panelAddItems
+    it h box = M.fromList <$>  mapM append it
+    where
+        append (Item name Max i) =  do
+            (st, wid) <- initItem i
+            io $ boxPackStart box wid PackGrow 0 >> widgetShow wid
+            return (name, Item name Max st)
+        append (Item name (Size w) i) = do
+            (st, wid) <- initItem i
+            io $ void $ widgetSizeAllocate wid (Rectangle 0 0 w h)
+            io $ boxPackStart box wid PackNatural 0 >> widgetShow wid
+
+            return (name, Item name (Size w) st)
+            
+
+
+                
+                
+            
 
 startGtkPanel :: GtkPanel -> Moonbase GtkPanel
 startGtkPanel
@@ -82,25 +133,30 @@ startGtkPanel
         setupPanel Nothing = errorM "Could not get display. Creating gtk panel failed." >> return p
         setupPanel (Just dsp) = do
             scr <- io $ displayGetScreen dsp $ screen conf
-            geomentry <- io $ screenGetMonitorGeometry scr 0
-            
-            pw <- createPanel geomentry
+            geo <- io $ screenGetMonitorGeometry scr 0 
+            (win, box) <- createPanel
 
-            io $ postGUIAsync $ widgetShow pw
-            return $ GtkPanel conf st { panel = Just pw }
-        createPanel (Rectangle x y w h) = io $ do
-            window <- windowNew
-            widgetSetName window "Panel"
-            windowSetTypeHint window WindowTypeHintDock
-            windowSetDefaultSize window w (height conf)
-            widgetModifyBg window StateNormal (background conf)
-            widgetModifyFg window StateNormal (foreground conf)
-            
-            windowMove window x (y + case position conf of
-                Top -> 0
-                Bottom -> h - height conf)
-            return window
+            setPanelSize geo (height conf) win
+            setPanelPosition geo (height conf) (position conf) win
 
+            i <- panelAddItems (items conf) (height conf) box
+           
+
+            io $ postGUIAsync $ widgetShow box >> widgetShow win
+            return $ GtkPanel conf st { panel = Just win, hbox = Just box, itms = i}
+
+        createPanel = io $ do
+            win <- windowNew
+            widgetSetName win "Panel"
+            windowSetTypeHint win WindowTypeHintDock
+            widgetModifyBg win StateNormal (background conf)
+            widgetModifyFg win StateNormal (foreground conf)
+
+            box <- hBoxNew False 2
+            containerAdd win box
+
+            return (win, box)
+    
 
 stopGtkPanel :: GtkPanel -> Moonbase ()
 stopGtkPanel
