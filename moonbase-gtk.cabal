@@ -49,6 +49,10 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:    Moonbase.Panel.Gtk
+                    , Moonbase.Panel.Gtk.Item
+                    , Moonbase.Panel.Gtk.Item.Spacer
+                    , Moonbase.Panel.Gtk.Item.Date
+                    , Moonbase.Panel.Gtk.Item.QuitButton
                     , Moonbase.Hook.Gtk
                     , Moonbase.Util.Color
   
@@ -66,6 +70,8 @@ library
                      , dbus >= 0.10.7
                      , moonbase >= 0.1.0.0
                      , xdg >= 0.1.0.0
+                     , time >= 1.4.2
+                     , old-locale >= 1.0.0.5
   
   -- Directories containing source files.
   hs-source-dirs:      src/

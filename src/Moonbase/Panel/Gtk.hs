@@ -4,12 +4,10 @@ module Moonbase.Panel.Gtk
     ( PanelPosition(..)
     , Color
     , PanelItem(..)
-    , ItemWidth(..)
     , Item(..)
     , PanelConfig(..)
     , GtkPanel(..)
     , gtkPanel
-    , sampleItem
     ) where
 
 import Control.Monad
@@ -29,27 +27,12 @@ data PanelPosition = Top
                    | Bottom
                    | Custom Int
 
-data ItemWidth = Max
-               | Size Int
-
 class PanelItem a where
     initItem :: a -> Moonbase (a, Widget)
     getWidget :: a -> Widget
 
-data Item = forall a. (PanelItem a) => Item Name ItemWidth a
+data Item = forall a. (PanelItem a) => Item Name Packing a
 
-data SampleItem = SampleItem String (Maybe Label)
-
-instance PanelItem SampleItem where
-    initItem (SampleItem n _)  = do
-        l <- io $ labelNew (Just n)
-        return (SampleItem n (Just l), toWidget l)
-    getWidget (SampleItem _ (Just l)) = toWidget l
-
-sampleItem :: String -> ItemWidth -> Item
-sampleItem n w = Item n w (SampleItem n Nothing)
-        
-        
         
     
 data PanelState = PanelState 
@@ -109,16 +92,10 @@ panelAddItems :: [Item] -> Int -> HBox -> Moonbase (M.Map Name Item)
 panelAddItems
     it h box = M.fromList <$>  mapM append it
     where
-        append (Item name Max i) =  do
+        append (Item name p i) =  do
             (st, wid) <- initItem i
-            io $ boxPackStart box wid PackGrow 0 >> widgetShow wid
-            return (name, Item name Max st)
-        append (Item name (Size w) i) = do
-            (st, wid) <- initItem i
-            io $ void $ widgetSizeAllocate wid (Rectangle 0 0 w h)
-            io $ boxPackStart box wid PackNatural 0 >> widgetShow wid
-
-            return (name, Item name (Size w) st)
+            io $ boxPackStart box wid p 0
+            return (name, Item name p st)
             
 
 
@@ -142,7 +119,7 @@ startGtkPanel
             i <- panelAddItems (items conf) (height conf) box
            
 
-            io $ postGUIAsync $ widgetShow box >> widgetShow win
+            io $ postGUIAsync $ widgetShowAll win
             return $ GtkPanel conf st { panel = Just win, hbox = Just box, itms = i}
 
         createPanel = io $ do
