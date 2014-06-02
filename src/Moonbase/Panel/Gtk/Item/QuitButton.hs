@@ -22,7 +22,10 @@ instance PanelItem ItemQuitButton where
         b <- io $ buttonNewFromStock stockQuit
         _ <- io $ on b buttonActivated $ do
             client <- connectSession
-            callNoReply client $ methodCall "/org/moonbase" "org.Moonbase.Core" "Quit"
+            callNoReply client (methodCall "/" "org.Moonbase.Core" "Quit")
+                { methodCallDestination = Just "org.Moonbase.Core"
+                }
+
 
         return (ItemQuitButton (Just b), toWidget b)
 
