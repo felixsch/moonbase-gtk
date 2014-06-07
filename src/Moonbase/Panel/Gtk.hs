@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Moonbase.Panel.Gtk
     ( PanelPosition(..)
@@ -10,25 +11,26 @@ module Moonbase.Panel.Gtk
     , gtkPanel
     ) where
 
-import Control.Monad
 import Control.Applicative
 --import Control.Monad.Reader
---import Control.Monad.State
+import Control.Monad.State
 
 import qualified Data.Map as M
 
-import Graphics.UI.Gtk
+import Graphics.UI.Gtk hiding (get)
 
 import Moonbase.Core
 import Moonbase.Log
 import Moonbase.Hook.Gtk
+
+type GtkPanelT a = PanelT GtkPanel a
 
 data PanelPosition = Top
                    | Bottom
                    | Custom Int
 
 class PanelItem a where
-    initItem :: a -> Moonbase (a, Widget)
+    initItem :: a -> GtkPanelT (a, Widget)
     getWidget :: a -> Widget
 
 data Item = forall a. (PanelItem a) => Item Name Packing a
@@ -36,16 +38,16 @@ data Item = forall a. (PanelItem a) => Item Name Packing a
         
     
 data PanelState = PanelState 
-  { itms :: M.Map String Item
-  , panel :: Maybe Window
-  , hbox :: Maybe HBox
+  { stItems :: M.Map String Item
+  , stPanel :: Maybe Window
+  , stHBox :: Maybe HBox
   }
 
 emptyState :: PanelState
 emptyState = PanelState
-  { itms = M.empty
-  , panel = Nothing
-  , hbox  = Nothing
+  { stItems = M.empty
+  , stPanel = Nothing
+  , stHBox  = Nothing
   }
 
 
@@ -63,9 +65,11 @@ gtkPanel :: PanelConfig -> Panel
 gtkPanel conf = Panel "GtkPanel" (GtkPanel conf emptyState)
 
 
-data GtkPanel = GtkPanel PanelConfig PanelState
+data GtkPanel = GtkPanel
+  { gtkPanelConfig :: PanelConfig
+  , gtkPanelState :: PanelState }
 
-instance StartStop GtkPanel where
+instance StartStop GtkPanel PanelT where
     start = startGtkPanel
     stop  = stopGtkPanel
     isRunning = isGtkPanelRunning
@@ -73,7 +77,7 @@ instance StartStop GtkPanel where
 instance Requires GtkPanel where
     requires _ = [gtkInit, gtkMain, gtkQuit]
 
-setPanelSize :: Rectangle -> Int -> Window -> Moonbase ()
+setPanelSize :: Rectangle -> Int -> Window -> GtkPanelT ()
 setPanelSize
     (Rectangle _ _ w _) h win = io $ do
         windowSetDefaultSize win w h
@@ -82,15 +86,15 @@ setPanelSize
             no   = Nothing :: Maybe Widget
             size = Just (w, h)
 
-setPanelPosition :: Rectangle -> Int -> PanelPosition -> Window -> Moonbase ()
+setPanelPosition :: Rectangle -> Int -> PanelPosition -> Window -> GtkPanelT ()
 setPanelPosition
     _ _ Top win = io $ windowMove win 0 0 
 setPanelPosition
     (Rectangle _  _  _ h) hi Bottom win = io $ windowMove win 0 (h - hi)
 
-panelAddItems :: [Item] -> Int -> HBox -> Moonbase (M.Map Name Item)
+panelAddItems :: [Item] -> Int -> HBox -> GtkPanelT (M.Map Name Item)
 panelAddItems
-    it h box = M.fromList <$>  mapM append it
+    it _ box = M.fromList <$>  mapM append it
     where
         append (Item name p i) =  do
             (st, wid) <- initItem i
@@ -103,15 +107,20 @@ panelAddItems
                 
             
 
-startGtkPanel :: GtkPanel -> Moonbase GtkPanel
-startGtkPanel
-    p@(GtkPanel conf st)  = setupPanel =<< io displayGetDefault
+startGtkPanel :: GtkPanelT Bool
+startGtkPanel = do
+     (GtkPanel conf st) <- get
+     disp <- io displayGetDefault
+     pa <- setupPanel disp conf st
+     case pa of
+        Nothing -> errorM "Could not get display. Creating gtkpanel failed" >> return False
+        Just p  -> put p >> return True
     where
-        setupPanel Nothing = errorM "Could not get display. Creating gtk panel failed." >> return p
-        setupPanel (Just dsp) = do
+        setupPanel Nothing _ _ = return Nothing
+        setupPanel (Just dsp) conf st = do
             scr <- io $ displayGetScreen dsp $ screen conf
             geo <- io $ screenGetMonitorGeometry scr 0 
-            (win, box) <- createPanel
+            (win, box) <- createPanel conf
 
             setPanelSize geo (height conf) win
             setPanelPosition geo (height conf) (position conf) win
@@ -120,9 +129,12 @@ startGtkPanel
            
 
             io $ postGUIAsync $ widgetShowAll win
-            return $ GtkPanel conf st { panel = Just win, hbox = Just box, itms = i}
+            return $ Just $ GtkPanel conf st
+              { stPanel = Just win
+              , stHBox = Just box
+              , stItems = i }
 
-        createPanel = io $ do
+        createPanel conf = io $ do
             win <- windowNew
             widgetSetName win "Panel"
             windowSetTypeHint win WindowTypeHintDock
@@ -135,17 +147,14 @@ startGtkPanel
             return (win, box)
     
 
-stopGtkPanel :: GtkPanel -> Moonbase ()
-stopGtkPanel
-    (GtkPanel _ st) = destroy $ panel st
-        where
-            destroy Nothing = return ()
-            destroy (Just pn) = io $ widgetDestroy pn
+stopGtkPanel :: GtkPanelT ()
+stopGtkPanel = destroy =<< (stPanel . gtkPanelState <$> get)
+    where
+        destroy Nothing = return ()
+        destroy (Just pn) = io $ widgetDestroy pn
 
-isGtkPanelRunning :: GtkPanel -> Moonbase Bool
-isGtkPanelRunning
-    _ = return True
-
+isGtkPanelRunning :: GtkPanelT Bool
+isGtkPanelRunning = return True
 
 
 
