@@ -12,9 +12,13 @@ data ItemSpacer = ItemSpacer (Maybe Label)
 
 instance PanelItem ItemSpacer where
     initItem _ = do
-     sp <- io $ labelNew Nothing
+     sp <- io $ labelNew' Nothing 
      return (ItemSpacer (Just sp), toWidget sp)
     getWidget (ItemSpacer (Just sp)) = toWidget sp
+
+
+labelNew' :: Maybe String -> IO Label
+labelNew' = labelNew
 
 spacer :: Item
 spacer = Item "spacer" PackGrow (ItemSpacer Nothing)

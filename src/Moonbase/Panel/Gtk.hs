@@ -23,7 +23,7 @@ import Moonbase.Core
 import Moonbase.Log
 import Moonbase.Hook.Gtk
 
-type GtkPanelT a = PanelT GtkPanel a
+type GtkPanelT a = ComponentM GtkPanel a
 
 data PanelPosition = Top
                    | Bottom
@@ -62,20 +62,19 @@ data PanelConfig = PanelConfig
 
 
 gtkPanel :: PanelConfig -> Panel
-gtkPanel conf = Panel "GtkPanel" (GtkPanel conf emptyState)
+gtkPanel conf = Panel "GtkPanel" [gtkInit, gtkMain, gtkQuit] (GtkPanel conf emptyState)
 
 
 data GtkPanel = GtkPanel
   { gtkPanelConfig :: PanelConfig
   , gtkPanelState :: PanelState }
 
-instance StartStop GtkPanel PanelT where
+instance Component GtkPanel where
     start = startGtkPanel
     stop  = stopGtkPanel
     isRunning = isGtkPanelRunning
 
-instance Requires GtkPanel where
-    requires _ = [gtkInit, gtkMain, gtkQuit]
+
 
 setPanelSize :: Rectangle -> Int -> Window -> GtkPanelT ()
 setPanelSize
@@ -100,13 +99,7 @@ panelAddItems
             (st, wid) <- initItem i
             io $ boxPackStart box wid p 0
             return (name, Item name p st)
-            
-
-
-                
-                
-            
-
+        
 startGtkPanel :: GtkPanelT Bool
 startGtkPanel = do
      (GtkPanel conf st) <- get

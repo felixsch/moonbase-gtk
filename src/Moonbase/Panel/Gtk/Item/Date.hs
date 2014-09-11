@@ -24,7 +24,7 @@ data ItemDate = ItemDate String (Maybe Label)
 instance PanelItem ItemDate where
     getWidget (ItemDate _ (Just l)) = toWidget l
     initItem (ItemDate fmt _) = do
-        l <- io $ labelNew Nothing
+        l <- io $ labelNew (Just "-")
 
         _ <- io $ on l realize $ void $
             forkIO $ forever $ do
