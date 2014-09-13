@@ -12,6 +12,7 @@ import DBus.Client
 
 import Moonbase.Core (io)
 import Moonbase.Panel.Gtk
+import Moonbase.Util.Gtk
 
 
 data ItemQuitButton = ItemQuitButton (Maybe Button)
@@ -19,12 +20,15 @@ data ItemQuitButton = ItemQuitButton (Maybe Button)
 instance PanelItem ItemQuitButton where
     getWidget (ItemQuitButton (Just b)) = toWidget b
     initItem _ = do
-        b <- io $ buttonNewFromStock stockQuit
+        b <- iosync $ buttonNewWithLabel ("Quit" :: String)
+        
         _ <- io $ on b buttonActivated $ do
             client <- connectSession
             callNoReply client (methodCall "/" "org.Moonbase.Core" "Quit")
                 { methodCallDestination = Just "org.Moonbase.Core"
                 }
+
+        iosync $ widgetShow b
 
 
         return (ItemQuitButton (Just b), toWidget b)

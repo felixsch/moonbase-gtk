@@ -7,12 +7,14 @@ import Graphics.UI.Gtk
 
 import Moonbase.Core
 import Moonbase.Panel.Gtk
+import Moonbase.Util.Gtk
 
 data ItemSpacer = ItemSpacer (Maybe Label)
 
 instance PanelItem ItemSpacer where
     initItem _ = do
-     sp <- io $ labelNew' Nothing 
+     sp <- io $ labelNew' Nothing
+     iosync $ widgetShow sp
      return (ItemSpacer (Just sp), toWidget sp)
     getWidget (ItemSpacer (Just sp)) = toWidget sp
 

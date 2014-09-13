@@ -16,6 +16,7 @@ import Graphics.UI.Gtk
 
 import Moonbase.Core
 import Moonbase.Panel.Gtk
+import Moonbase.Util.Gtk
 
 
 
@@ -30,6 +31,8 @@ instance PanelItem ItemDate where
             forkIO $ forever $ do
                 labelSetLabel l =<< formatTime defaultTimeLocale fmt <$> getCurrentTime
                 threadDelay 1000000 -- one second 
+
+        iosync $ widgetShow l
 
         return (ItemDate fmt (Just l), toWidget l) 
 
