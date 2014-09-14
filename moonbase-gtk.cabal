@@ -53,6 +53,8 @@ library
                     , Moonbase.Panel.Gtk.Item.Spacer
                     , Moonbase.Panel.Gtk.Item.Date
                     , Moonbase.Panel.Gtk.Item.QuitButton
+                    , Moonbase.Panel.Gtk.Item.DbusLabel
+                    , Moonbase.Desktop.Gtk
                     , Moonbase.Hook.Gtk
                     , Moonbase.Util.Color
                     , Moonbase.Util.Gtk
@@ -67,7 +69,9 @@ library
   build-depends:       base >=4.6 && <4.8
                      , containers >= 0.5.0.0
                      , mtl >= 2.1.2
-                     , gtk3 >= 0.12.5.6
+                     , gtk3 == 0.12.5.7
+                     , glib >= 0.12.5.4
+                     , cairo >= 0.12.5.3
                      , dbus >= 0.10.7
                      , moonbase >= 0.1.0.0
                      , xdg >= 0.1.0.0

@@ -14,7 +14,6 @@ data ItemSpacer = ItemSpacer (Maybe Label)
 instance PanelItem ItemSpacer where
     initItem _ = do
      sp <- io $ labelNew' Nothing
-     iosync $ widgetShow sp
      return (ItemSpacer (Just sp), toWidget sp)
     getWidget (ItemSpacer (Just sp)) = toWidget sp
 

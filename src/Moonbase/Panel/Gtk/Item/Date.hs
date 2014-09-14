@@ -9,8 +9,8 @@ import Control.Monad (forever, void)
 
 import System.Locale (defaultTimeLocale)
 
-import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format (formatTime)
+import Data.Time.LocalTime
 
 import Graphics.UI.Gtk
 
@@ -29,10 +29,9 @@ instance PanelItem ItemDate where
 
         _ <- io $ on l realize $ void $
             forkIO $ forever $ do
-                labelSetLabel l =<< formatTime defaultTimeLocale fmt <$> getCurrentTime
+                
+                postGUISync $ labelSetLabel l =<< formatTime defaultTimeLocale fmt <$> getZonedTime
                 threadDelay 1000000 -- one second 
-
-        iosync $ widgetShow l
 
         return (ItemDate fmt (Just l), toWidget l) 
 

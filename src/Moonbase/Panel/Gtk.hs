@@ -128,22 +128,19 @@ calcStrut pos ph (Rectangle sX sY sW sH) screens = genProperties pos sX (sW - 1)
 startGtkPanel :: GtkPanelT Bool
 startGtkPanel = do
 
-    moon $ debugM "foo 1 "
     p     <- get
     disp  <- checkDisplay =<< io displayGetDefault
-    moon $ debugM "foo 2 "
 
     (win, box)  <- io $ createPanel p disp
-    moon $ debugM "foo 3 "
 
     items'      <- panelAddItems (items $ gtkPanelConfig p) box
-    moon $ debugM "foo 4 "
 
+    io $ widgetShowAll win
     put $ p { gtkPanelState = PanelState 
       { stItems = items'
       , stPanel = Just win
       , stHBox  = Just box }}
-    moon $ debugM "foo 5 "
+    moon $ infoM "foo 5 "
 
     return True
     where
@@ -167,6 +164,7 @@ createPanel (GtkPanel conf st) disp = do
      windowSetScreen   win scr
      windowSetTypeHint win WindowTypeHintDock 
      windowSetGravity  win GravityStatic
+
      
      widgetSetCanFocus win False
      widgetModifyBg    win StateNormal (background conf)
@@ -179,8 +177,6 @@ createPanel (GtkPanel conf st) disp = do
      box <- hBoxNew False 2
      containerAdd win box
 
-     iosync $ widgetShowAll win
-
      return (win, box)
 
 setPanelSize :: PanelConfig -> Window -> IO ()
@@ -190,7 +186,11 @@ setPanelSize conf win = do
    moNum    <- screenGetNMonitors scr
 
    moGeos   <- mapM (screenGetMonitorGeometry scr) [0 .. (moNum - 1)]
-   moSelGeo <- screenGetMonitorGeometry scr (monitor conf)
+   moSelGeo@(Rectangle x y w h) <- screenGetMonitorGeometry scr (monitor conf)
+
+   windowSetDefaultSize win w (height conf)
+   widgetSetSizeRequest win w (height conf)
+   windowResize win w (height conf)
 
    movePanel win (position conf) (height conf) moSelGeo
    setPanelHints win moSelGeo (height conf)
@@ -221,89 +221,6 @@ movePanel win pos height (Rectangle x _ _ h) = windowMove win x offset
             Bottom         -> h - height
             Custom height' -> h - height - height'
 
-
-
-
-
-
-{-
-
-
-
-            win <- windowNew
-            widgetSetName win "Panel"
-            windowSetTypeHint win WindowTypeHintDock
-            windowSetKeepAbove win (aboveAll conf)
-            windowSetGravity win GravityStatic
-
-            widgetSetCanFocus win False
-            widgetModifyBg win StateNormal (background conf)
-            widgetModifyFg win StateNormal (foreground conf)
-
-            box <- hBoxNew False 2
-            containerAdd win box
-
-            return (win, box)
-     
-
-
-     pa <- setupPanel disp conf st
-     case pa of
-        Nothing -> errorM "Could not get display. Creating gtkpanel failed" >> return False
-        Just p  -> put p >> return True
-    where
-        setProp win pos height geo monitors = setStrutProperties win $
-            strutProperties pos height geo monitors
-
-        setupPanel Nothing    _    _  = return Nothing
-        setupPanel (Just dsp) conf st = do
-            
-            screenNum   <- io $ displayGetNScreens dsp
-
-            --when (screen conf < screenNum) $ 
-            --    moon $ throwError (InitFailed "GtkPanel: Invalid screen number")
-
- 
-            scr         <- io $ displayGetScreen dsp $ screen conf
-            monitorsGeo <- mapM (io . screenGetMonitorGeometry scr) [0 .. (screenNum - 1)]
-            geo         <- io $ screenGetMonitorGeometry scr (screen conf)
-
-            (win, box)  <- createPanel conf
-
-            setPanelSize geo (height conf) win
-            setPanelPosition geo (height conf) (position conf) win
-
-            i <- panelAddItems (items conf) (height conf) box
-
-            
-
-            io $ setProp win (position conf) (height conf) geo monitorsGeo
-            io $ after win realize $ setProp win (position conf) (height conf) geo monitorsGeo
-
-            io $ postGUIAsync $ widgetShowAll win
-            io $ postGUIAsync $ widgetQueueResize win
-
-            return $ Just $ GtkPanel conf st
-              { stPanel = Just win
-              , stHBox = Just box
-              , stItems = i }
-
-        createPanel conf = io $ do
-            win <- windowNew
-            widgetSetName win "Panel"
-            windowSetTypeHint win WindowTypeHintDock
-            windowSetKeepAbove win (aboveAll conf)
-            windowSetGravity win GravityStatic
-
-            widgetSetCanFocus win False
-            widgetModifyBg win StateNormal (background conf)
-            widgetModifyFg win StateNormal (foreground conf)
-
-            box <- hBoxNew False 2
-            containerAdd win box
-
-            return (win, box)
--} 
 
 stopGtkPanel :: GtkPanelT ()
 stopGtkPanel = destroy =<< (stPanel . gtkPanelState <$> get)
