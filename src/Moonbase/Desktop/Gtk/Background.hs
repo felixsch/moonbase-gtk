@@ -1,4 +1,5 @@
-module Moonbase.Desktop.Gtk
+
+module Moonbase.Desktop.Gtk.Background
   ( justImage
   , BackgroundImage (..)
   ) where
@@ -33,10 +34,6 @@ instance Component BackgroundImage where
     stop      = backgroundStop
 
     isRunning = return True
-
-
-
-
 
 backgroundStart :: ComponentM BackgroundImage Bool
 backgroundStart = do
@@ -137,19 +134,5 @@ backgroundStop = return () -- implement me!
 justImage :: FilePath -> Int -> Maybe Int -> Desktop
 justImage path monitor mScreen = Desktop "background-image" [gtkInit, gtkMain, gtkQuit] $ BackgroundImage monitor mScreen path
 
-
-
-setupCursor :: (Component st) => Cursor -> ComponentM st ()
-setupCursor cursor = do
-    disp      <- checkDisplay =<< io displayGetDefault
-    screenNum <- io $ displayGetNScreens disp
-    forM_ [0 .. (screenNum - 1)] $ \i -> io $ do
-        scr <- displayGetScreen disp i
-        root <- screenGetRootWindow scr
-        drawWindowSetCursor root (Just cursor)
-
-    where 
-      checkDisplay (Just disp) = return disp
-      checkDisplay _           = throwError (InitFailed "BackgroundImage: Could not open display")
 
 

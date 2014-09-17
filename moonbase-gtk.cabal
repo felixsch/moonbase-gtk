@@ -56,7 +56,9 @@ library
                     , Moonbase.Panel.Gtk.Item.DbusLabel
                     , Moonbase.Desktop.Gtk
                     , Moonbase.Hook.Gtk
-                    , Moonbase.Util.Color
+                    , Moonbase.Util.Gtk.Color
+                    , Moonbase.Util.Gtk.Widget.Graph 
+                    , Moonbase.Util.Gtk.Widget
                     , Moonbase.Util.Gtk
   
   -- Modules included in this library but not exported.
