@@ -54,6 +54,7 @@ library
                     , Moonbase.Panel.Gtk.Item.Date
                     , Moonbase.Panel.Gtk.Item.QuitButton
                     , Moonbase.Panel.Gtk.Item.DbusLabel
+                    , Moonbase.Panel.Gtk.Item.CpuGraph
                     , Moonbase.Desktop.Gtk
                     , Moonbase.Hook.Gtk
                     , Moonbase.Util.Gtk.Color

@@ -7,9 +7,8 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Monad (forever, void)
 
-import System.Locale (defaultTimeLocale)
 
-import Data.Time.Format (formatTime)
+import Data.Time.Format
 import Data.Time.LocalTime
 
 import Graphics.UI.Gtk
