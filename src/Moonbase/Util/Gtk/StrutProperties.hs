@@ -1,5 +1,5 @@
 
-module Moonbase.Panel.Gtk.StrutProperties
+module Moonbase.Util.Gtk.StrutProperties
   ( setStrutProperties
   , StrutProperties(..)
   , newStrutProp

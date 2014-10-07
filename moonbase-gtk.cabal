@@ -64,7 +64,7 @@ library
                     , Moonbase.Util.Gtk
   
   -- Modules included in this library but not exported.
-  other-modules:      Moonbase.Panel.Gtk.StrutProperties
+  other-modules:      Moonbase.Util.Gtk.StrutProperties
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    

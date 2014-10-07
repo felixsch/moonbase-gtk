@@ -2,8 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Moonbase.Panel.Gtk
-    ( PanelPosition(..)
-    , Color
+    ( Color
     , PanelItem(..)
     , Item(..)
     , PanelConfig(..)
@@ -25,14 +24,15 @@ import Moonbase.Hook.Gtk
 import Moonbase.Util.Gtk
 import Moonbase.Log
 
-import Moonbase.Panel.Gtk.StrutProperties
 
 
 type GtkPanelT a = ComponentM GtkPanel a
 
+{-
 data PanelPosition = Top
                    | Bottom
                    | Custom Int
+-}
 
 class PanelItem a where
     initItem :: a -> GtkPanelT (a, Widget)
@@ -61,7 +61,7 @@ data PanelConfig = PanelConfig
   , height :: Int
   , spanPanel :: Bool
   , aboveAll :: Bool
-  , position :: PanelPosition
+  , position :: Position
   , background :: Color
   , foreground :: Color
   , items :: [Item]
@@ -91,7 +91,7 @@ panelAddItems
             io $ boxPackStart box wid p 0
             return $ Item name p st
 
-
+{-
 strutProperties :: PanelPosition -- ^ Bar position
                 -> Int -- ^ Bar height
                 -> Rectangle -- ^ Current monitor rectangle
@@ -109,6 +109,7 @@ strutProperties pos bh (Rectangle mX mY mW mH) monitors = propertize pos sX sW s
         propertize p x w h = case p of
             Top    -> StrutProperties 0 0 h 0 0 0 0 0 x (x+w) 0 0
             Bottom -> StrutProperties 0 0 0 h 0 0 0 0 0 0 x (x+w)
+-}
 {-
 calcStrut :: PanelPosition -> Int -> Rectangle -> [Rectangle] -> StrutProperties
 calcStrut pos ph (Rectangle sX sY sW sH) screens = genProperties pos sX (sW - 1) cH
@@ -148,9 +149,6 @@ startGtkPanel = do
         checkDisplay _           = moon $ throwError (InitFailed "Could not open display")
     
 
-
-
-
 createPanel :: GtkPanel -> Display -> IO (Window, HBox)
 createPanel (GtkPanel conf st) disp = do
 
@@ -183,25 +181,22 @@ setPanelSize :: PanelConfig -> Window -> IO ()
 setPanelSize conf win = do
    scr      <- windowGetScreen win
 
-   moNum    <- screenGetNMonitors scr
-
-   moGeos   <- mapM (screenGetMonitorGeometry scr) [0 .. (moNum - 1)]
    moSelGeo@(Rectangle x y w h) <- screenGetMonitorGeometry scr (monitor conf)
 
    windowSetDefaultSize win w (height conf)
    widgetSetSizeRequest win w (height conf)
    windowResize win w (height conf)
 
-   movePanel win (position conf) (height conf) moSelGeo
-   setPanelHints win moSelGeo (height conf)
+   moveWindow win (position conf) (height conf) moSelGeo
+   setWindowHints win moSelGeo (height conf)
 
-   _ <- on win realize $ setPanelStrut win (position conf) (height conf) moSelGeo moGeos
+   _ <- on win realize $ setWindowStruts win (position conf) (height conf) moSelGeo
 
    isRealized <- widgetGetRealized win
-   when isRealized $ setPanelStrut win (position conf) (height conf) moSelGeo moGeos
+   when isRealized $ setWindowStruts win (position conf) (height conf) moSelGeo
 
    
-
+{-
 setPanelHints :: Window -> Rectangle -> Int -> IO ()
 setPanelHints win (Rectangle _ _ w _) height =
     windowSetGeometryHints win noWidget size size Nothing Nothing Nothing
@@ -219,7 +214,7 @@ movePanel win pos height (Rectangle x _ _ h) = windowMove win x offset
         offset = case pos of
             Top            -> 0
             Bottom         -> h - height
-            Custom height' -> h - height - height'
+            Custom height' -> h - height - height' -}
 
 
 stopGtkPanel :: GtkPanelT ()
