@@ -49,7 +49,6 @@ cpuFetchInfo graph = do
         user = foldr (+) 0 $ take 2 pct
         system = pct !! 2
         t = user + system
-    putStrLn $ "usage: " ++ show t
     set graph [graphHistory :~ (S.|> t)]
   where
       readStat = do

@@ -236,7 +236,7 @@ renderAreaGraph trans w h pad' color hist = do
 
      check x
        | S.null x = 0.0
-       | otherwise = S.take 1 x
+       | otherwise = S.index x 1
            
 
 loopR :: (Monad m) => S.Seq Double -> (Int -> Double -> m a) -> m [a]
