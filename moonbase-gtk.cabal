@@ -49,18 +49,18 @@ cabal-version:       >=1.10
 library
   -- Modules exported by the library.
   exposed-modules:    Moonbase.Panel.Gtk
-                    , Moonbase.Panel.Gtk.Item
-                    , Moonbase.Panel.Gtk.Item.Spacer
-                    , Moonbase.Panel.Gtk.Item.Date
-                    , Moonbase.Panel.Gtk.Item.QuitButton
-                    , Moonbase.Panel.Gtk.Item.DbusLabel
-                    , Moonbase.Panel.Gtk.Item.CpuGraph
-                    , Moonbase.Desktop.Gtk
+                   -- , Moonbase.Panel.Gtk.Item
+                   , Moonbase.Panel.Gtk.Item.Spacer
+                   , Moonbase.Panel.Gtk.Item.Date
+                   -- , Moonbase.Panel.Gtk.Item.QuitButton
+                   , Moonbase.Panel.Gtk.Item.DbusLabel
+                   , Moonbase.Panel.Gtk.Item.CpuGraph
+                   , Moonbase.Desktop.Gtk
                     , Moonbase.Hook.Gtk
-                    , Moonbase.Util.Gtk.Color
-                    , Moonbase.Util.Gtk.Widget.Graph 
-                    , Moonbase.Util.Gtk.Widget.Prompt
-                    , Moonbase.Util.Gtk.Widget
+                   -- , Moonbase.Util.Gtk.Color
+                   , Moonbase.Util.Gtk.Widget.Graph 
+                   -- , Moonbase.Util.Gtk.Widget.Prompt
+                   , Moonbase.Util.Gtk.Widget
                     , Moonbase.Util.Gtk
   
   -- Modules included in this library but not exported.

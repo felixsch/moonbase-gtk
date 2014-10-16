@@ -16,8 +16,8 @@ import Control.Concurrent
 
 import Control.Exception
 
-import Moonbase.Core
-import Moonbase.Util.Gtk.Color
+import qualified Moonbase.Theme as Moon
+import Moonbase.Util.Gtk
 
 import qualified Data.Map as M
 import qualified Data.Sequence as S
@@ -40,9 +40,9 @@ data GraphConfig = GraphConfig
   , graphDirection   :: GraphDirection
   , graphStyle       :: GraphStyle
   , graphWidth       :: Int
-  , graphColor       :: HexColor
-  , graphBorder      :: Maybe (Int, HexColor)
-  , graphBackground  :: Maybe HexColor
+  , graphColor       :: Moon.Color
+  , graphBorder      :: Maybe (Int, Moon.Color)
+  , graphBackground  :: Maybe Moon.Color
   }
 
 
@@ -159,12 +159,12 @@ drawGraph w h conf hist = do
 
 
 
-renderBackground :: Int -> Int -> HexColor -> Render ()
+renderBackground :: Int -> Int -> Moon.Color -> Render ()
 renderBackground w h c = setSourceRGB r g b >> rectangle 0 0 (fromIntegral w) (fromIntegral h) >> paint
     where
         (r, g, b) = parseColor' c
 
-renderBorder :: Int -> Int -> Int -> (Int, HexColor) -> Render ()
+renderBorder :: Int -> Int -> Int -> (Int, Moon.Color) -> Render ()
 renderBorder w h padding (wid, c) = setSourceRGB r g b >> setLineWidth wid' >> moveTo j j >> rectangle j j w' h' >> stroke
     where
         (r, g, b) = parseColor' c
@@ -175,7 +175,7 @@ renderBorder w h padding (wid, c) = setSourceRGB r g b >> setLineWidth wid' >> m
         j         = pad - wid' / 2
 
 
-renderLineGraph :: Int -> Int -> Int -> HexColor -> GraphHistory -> Render ()
+renderLineGraph :: Int -> Int -> Int -> Moon.Color -> GraphHistory -> Render ()
 renderLineGraph w h padding color hist = do
    setLineWidth 1
    setSourceRGB r g b
@@ -197,7 +197,7 @@ renderLineGraph w h padding color hist = do
 
       fI      = fromIntegral
 
-renderAreaGraph :: Bool -> Int -> Int -> Int -> HexColor -> GraphHistory -> Render ()
+renderAreaGraph :: Bool -> Int -> Int -> Int -> Moon.Color -> GraphHistory -> Render ()
 renderAreaGraph trans w h pad' color hist = do
     setLineWidth 1
     setTrans trans

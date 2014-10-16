@@ -2,11 +2,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Moonbase.Panel.Gtk
-    ( Color
-    , PanelItem(..)
-    , Item(..)
-    , PanelConfig(..)
-    , GtkPanel(..)
+    ( GtkPanel
+    , GtkPanelItem
+    , GtkPanelConfig(..)
+    , GtkPanelState(..)
+    , gtkPanelConfig
+    , gtkPanelState
+    , gtkPanelGetBox
     , gtkPanel
     ) where
 
@@ -17,15 +19,139 @@ import Control.Monad.Except
 
 import qualified Data.Map as M
 
-import Graphics.UI.Gtk hiding (get)
+import qualified Graphics.UI.Gtk as Gtk
 
-import Moonbase.Core
+import Moonbase
+import Moonbase.Item
+import Moonbase.Theme
+
 import Moonbase.Hook.Gtk
 import Moonbase.Util.Gtk
-import Moonbase.Log
+
+
+type GtkPanelItem = Item (ComponentM GtkPanel) (Gtk.Widget, Gtk.Packing)
+
+type GtkPanel = (GtkPanelConfig, GtkPanelState)
+
+data GtkPanelConfig = GtkPanelConfig
+  { panelOnMonitor :: Int
+  , panelHeight  :: Int
+  , panelPosition :: Position
+  , panelFont :: Font
+  , panelBg :: Color
+  , panelFg :: Color
+  }
+
+data GtkPanelState = GtkPanelState
+  { panelWindow :: Maybe Gtk.Window
+  , panelHBox   :: Maybe Gtk.HBox
+  }
+
+gtkPanelState :: ComponentM GtkPanel GtkPanelState
+gtkPanelState = snd <$> get
+
+gtkPanelConfig :: ComponentM GtkPanel GtkPanelConfig
+gtkPanelConfig = fst <$> get
+
+gtkPanelGetBox :: ComponentM GtkPanel (Maybe Gtk.HBox)
+gtkPanelGetBox = panelHBox . snd <$> get
+
+
+gtkPanel :: (GtkPanelConfig -> GtkPanelConfig) -> GtkPanelItem -> Moonbase ()
+gtkPanel genConfig (Item items) = do
+    theme <- getTheme
+    withComponent "gtkPanel" $
+      newComponentWithCleanup (initialState theme) (initGtkPanel items) destroyGtkPanel   
+ where
+     initialState theme = (genConfig $ basicConfig theme, emptyState)
+
+     emptyState = GtkPanelState Nothing Nothing
+
+     basicConfig theme = GtkPanelConfig 
+       { panelOnMonitor    = 0
+       , panelHeight       = 20
+       , panelPosition     = Top
+       , panelBg           = bg theme
+       , panelFg           = normalC theme
+       , panelFont         = normal theme
+       }
+    
+     
+initGtkPanel :: [ComponentM GtkPanel (Gtk.Widget, Gtk.Packing)] -> ComponentM GtkPanel ()
+initGtkPanel items = do
+    (config, st) <- get
+    disp         <- checkDisplay =<< io Gtk.displayGetDefault
+
+    (win, box)   <- io $ createPanel config disp
+
+    put (config , GtkPanelState (Just win) (Just box))
+
+    items' <- sequence items
+
+    forM_ items' $ \(widget, packing) -> 
+        io $ Gtk.boxPackStart box widget packing 0
+  where
+      checkDisplay (Just disp) = return disp
+      checkDisplay _           = initFailed True "Could not open display" >> error "Could not open display"
+      
+
+destroyGtkPanel :: ComponentM GtkPanel ()
+destroyGtkPanel = return ()
+
+
+createPanel :: GtkPanelConfig -> Gtk.Display -> IO (Gtk.Window, Gtk.HBox)
+createPanel config disp = do
+
+     scr       <- Gtk.displayGetScreen disp $ panelOnMonitor config
+     screenNum <- Gtk.displayGetNScreens disp
+
+     win       <- Gtk.windowNew
+
+     Gtk.widgetSetName win "panel"
+
+     Gtk.windowSetScreen   win scr
+     Gtk.windowSetTypeHint win Gtk.WindowTypeHintDock 
+     Gtk.windowSetGravity  win Gtk.GravityStatic
+
+     
+     Gtk.widgetSetCanFocus win False
+     Gtk.widgetModifyBg    win Gtk.StateNormal (parseColor $ panelBg config)
+     Gtk.widgetModifyFg    win Gtk.StateNormal (parseColor $ panelFg config)
+
+     setPanelSize config win
+
+     _ <- Gtk.on scr Gtk.screenMonitorsChanged $ setPanelSize config win
+
+     box <- Gtk.hBoxNew False 2
+     Gtk.containerAdd win box
+
+     return (win, box)
+
+
+setPanelSize :: GtkPanelConfig -> Gtk.Window -> IO ()
+setPanelSize config win = do
+   scr      <- Gtk.windowGetScreen win
+
+   moSelGeo@(Gtk.Rectangle x y w h) <- Gtk.screenGetMonitorGeometry scr (panelOnMonitor config)
+
+   Gtk.windowSetDefaultSize win w (panelHeight config)
+   Gtk.widgetSetSizeRequest win w (panelHeight config)
+   Gtk.windowResize win w (panelHeight config)
+
+   moveWindow win (panelPosition config) moSelGeo
+   setWindowHints win moSelGeo
+
+   _ <- Gtk.on win Gtk.realize $ setWindowStruts win (panelPosition config) (panelHeight config) moSelGeo
+
+   isRealized <- Gtk.widgetGetRealized win
+   when isRealized $ setWindowStruts win (panelPosition config) (panelHeight config) moSelGeo
 
 
 
+
+        
+ 
+{-
 type GtkPanelT a = ComponentM GtkPanel a
 
 {-
@@ -225,6 +351,8 @@ stopGtkPanel = destroy =<< (stPanel . gtkPanelState <$> get)
 
 isGtkPanelRunning :: GtkPanelT Bool
 isGtkPanelRunning = return True
+
+-}
 
 
 

@@ -1,23 +1,48 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Moonbase.Panel.Gtk.Item.DbusLabel
-  ( ItemDBusLabel(..)
-  , xmonadLog
+  ( xmonadLog
   , dbusLabel
   ) where
 
 import Control.Monad
+import Control.Monad.State
 
-import Moonbase.Core
+import Moonbase
+import Moonbase.Item
 import Moonbase.Panel.Gtk
 
 import DBus
 import DBus.Client
 
-import Graphics.UI.Gtk
+import qualified Graphics.UI.Gtk as Gtk
 
-data ItemDBusLabel = ItemDBusLabel MatchRule (Maybe Label)
 
+xmonadLog :: GtkPanelItem
+xmonadLog = dbusLabel rule
+    where
+        rule      = matchAny 
+          { matchPath      = Just path
+          , matchInterface = Just interface
+          , matchMember    = Just member }
+        path      = DBus.objectPath_ "/org/moonbase/XMonadLog"
+        interface = DBus.interfaceName_ "org.xmonad.XMonadLog"
+        member    = DBus.memberName_ "Update"
+
+
+dbusLabel :: MatchRule -> GtkPanelItem
+dbusLabel match = item $ do
+        rt    <- moon $ get
+        label <- io $ Gtk.labelNew (Just "waiting for xmonad...")
+
+        void $ io $ addMatch (dbus rt) match $ \signal -> do
+            let Just str = fromVariant $ head (signalBody signal)
+            Gtk.postGUISync $ Gtk.labelSetMarkup label str
+
+        return (Gtk.toWidget label, Gtk.PackNatural)
+
+
+{-
 instance PanelItem ItemDBusLabel where
     getWidget (ItemDBusLabel _  (Just l) ) = toWidget l
     initItem (ItemDBusLabel match _) = do
@@ -46,7 +71,7 @@ xmonadLog = Item "xmonadLog" PackNatural $ ItemDBusLabel rule Nothing
 
 dbusLabel :: MatchRule -> Item
 dbusLabel rule = Item "dbusLabel" PackNatural $ ItemDBusLabel rule Nothing
-
+-}
 
 
 

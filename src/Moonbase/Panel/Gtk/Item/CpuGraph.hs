@@ -13,24 +13,36 @@ import qualified Data.Sequence as S
 import Data.Time.Format
 import Data.Time.LocalTime
 
-import Graphics.UI.Gtk
+import qualified Graphics.UI.Gtk as Gtk
 
-import Moonbase.Core
+import Moonbase
+import Moonbase.Theme
+import Moonbase.Item
 import Moonbase.Panel.Gtk
 import Moonbase.Util.Gtk
 import Moonbase.Util.Gtk.Widget.Graph
 
 
-data ItemCpuGraph = ItemCpuGraph Int GraphConfig (Maybe Graph) 
 
+cpuGraphWith :: GraphConfig -> Int -> GtkPanelItem
+cpuGraphWith config poll = item $ do
+    graph <- io $ pollingGraphNew config poll cpuFetchInfo
+    return (Gtk.toWidget graph, Gtk.PackNatural)
 
-instance PanelItem ItemCpuGraph where
-    getWidget (ItemCpuGraph _ _ (Just g)) = toWidget g
-
-    initItem (ItemCpuGraph poll conf _)   = do
-        graph <- io $ pollingGraphNew conf poll cpuFetchInfo
-
-        return (ItemCpuGraph poll conf (Just graph), toWidget graph)
+cpuGraph :: Int -> GtkPanelItem 
+cpuGraph poll = item $ do
+    theme <- moon $ getTheme
+    graph <- io $ pollingGraphNew (genConfig theme) poll cpuFetchInfo
+    return (Gtk.toWidget graph, Gtk.PackNatural)
+  where
+      genConfig theme = GraphConfig 
+        { graphPadding    = 4
+        , graphDirection  = GraphLeftToRight
+        , graphStyle      = LineGraph
+        , graphWidth      = 120
+        , graphColor      = hlC2 theme
+        , graphBorder     = Nothing
+        , graphBackground = Nothing }
 
 truncVal :: Double -> Double
 truncVal v
@@ -49,7 +61,7 @@ cpuFetchInfo graph = do
         user = foldr (+) 0 $ take 2 pct
         system = pct !! 2
         t = user + system
-    set graph [graphHistory :~ (S.|> t)]
+    Gtk.set graph [graphHistory Gtk.:~ (S.|> t)]
   where
       readStat = do
           hdl  <- openFile "/proc/stat" ReadMode
@@ -57,10 +69,4 @@ cpuFetchInfo graph = do
           hClose hdl
           return $ parse line    
       parse = map read . tail . words
-
-cpuGraph :: Int -> GraphConfig -> Item
-cpuGraph poll config = Item "cpuGraph" PackNatural $ ItemCpuGraph poll config Nothing
-
-
-
 

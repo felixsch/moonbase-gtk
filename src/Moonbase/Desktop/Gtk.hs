@@ -1,5 +1,7 @@
+{-# LANGUAGE ExistentialQuantification #-}
+
 module Moonbase.Desktop.Gtk
-  ( justImage
+  ( gtkDesktop
   , BackgroundImage (..)
   ) where
 
@@ -11,14 +13,20 @@ import System.Glib.GError
 
 import Data.Maybe
 
-import Graphics.UI.Gtk hiding ( get )
-import Graphics.Rendering.Cairo
+import qualified Graphics.UI.Gtk as Gtk
+import qualified Graphics.Rendering.Cairo as Cairo
 
-import Moonbase.Core
-import Moonbase.Log
+import Moonbase
+import Moonbase.Item
+import Moonbase.Theme
 
 
 import Moonbase.Hook.Gtk
+
+
+type GtkDesktop = Maybe Gtk.Window
+
+type GtkDesktopItem = Item (ComponentM GtkDesktop) ()
 
 
 
@@ -28,6 +36,22 @@ data BackgroundImage = BackgroundImage
   , biImage   :: FilePath }
 
 
+gtkDesktop :: GtkDesktop -> Moonbase ()
+gtkDesktop (Item desktop) = withComponent "gtkDesktop" $ newComponent Nothing $ do
+
+    
+    
+    return ()
+
+
+createBackgroundImage :: Gtk.Display -> ComponentM () Gtk.Image
+createBackgroundImage disp = do
+
+
+
+
+
+{-
 instance Component BackgroundImage where
     start     = backgroundStart
     stop      = backgroundStop
@@ -74,7 +98,7 @@ backgroundStart = do
     where
       checkDisplay (Just disp) = return disp
       checkDisplay _           = throwError (InitFailed "BackgroundImage: Could not open display")
-
+-}
 
 setupDesktop :: Window -> Int -> Int -> IO ()
 setupDesktop win w h = do
@@ -128,17 +152,8 @@ drawImage area geo@(Rectangle x y w h) image = do
     renderWithDrawWindow area $ setSourcePixbuf image (fromIntegral x) (fromIntegral y) >> paint >> fill
     
     drawWindowEndPaint area
-    
 
-
-backgroundStop :: ComponentM BackgroundImage ()
-backgroundStop = return () -- implement me!
-
-justImage :: FilePath -> Int -> Maybe Int -> Desktop
-justImage path monitor mScreen = Desktop "background-image" [gtkInit, gtkMain, gtkQuit] $ BackgroundImage monitor mScreen path
-
-
-
+{-
 setupCursor :: (Component st) => Cursor -> ComponentM st ()
 setupCursor cursor = do
     disp      <- checkDisplay =<< io displayGetDefault
@@ -152,4 +167,4 @@ setupCursor cursor = do
       checkDisplay (Just disp) = return disp
       checkDisplay _           = throwError (InitFailed "BackgroundImage: Could not open display")
 
-
+-}

@@ -8,7 +8,7 @@ import Control.Monad
 import Control.Concurrent
 
 import Graphics.UI.Gtk
-import Moonbase.Core
+import Moonbase
 
 
 gtkInit :: Hook
@@ -18,6 +18,6 @@ gtkMain :: Hook
 gtkMain = Hook "gtkmain" HookAfterStartup $ io $ void $ forkIO mainGUI
 
 gtkQuit :: Hook
-gtkQuit = Hook "gtkquit" HookQuit $ io mainQuit
+gtkQuit = Hook "gtkquit" HookExit $ io mainQuit
 
 

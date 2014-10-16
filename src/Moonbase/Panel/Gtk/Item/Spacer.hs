@@ -1,30 +1,21 @@
 module Moonbase.Panel.Gtk.Item.Spacer
     ( spacer
-    , (<-->)
+    , (<--->)
     ) where
 
-import Graphics.UI.Gtk
+import qualified Graphics.UI.Gtk as Gtk
 
-import Moonbase.Core
+import Moonbase
+import Moonbase.Item
 import Moonbase.Panel.Gtk
-import Moonbase.Util.Gtk
 
-data ItemSpacer = ItemSpacer (Maybe Label)
+spacer :: GtkPanelItem
+spacer = item $ do
+    label <- io $ labelNew' Nothing
+    return (Gtk.toWidget label, Gtk.PackGrow)
+  where
+      labelNew' :: Maybe String -> IO Gtk.Label
+      labelNew' = Gtk.labelNew
 
-instance PanelItem ItemSpacer where
-    initItem _ = do
-     sp <- io $ labelNew' Nothing
-     return (ItemSpacer (Just sp), toWidget sp)
-    getWidget (ItemSpacer (Just sp)) = toWidget sp
-
-
-labelNew' :: Maybe String -> IO Label
-labelNew' = labelNew
-
-spacer :: Item
-spacer = Item "spacer" PackGrow (ItemSpacer Nothing)
-
-(<-->) :: Item
-(<-->) = spacer
-
-
+(<--->) :: GtkPanelItem
+(<--->) = spacer

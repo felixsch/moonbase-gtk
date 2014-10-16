@@ -1,6 +1,6 @@
 module Moonbase.Panel.Gtk.Item.Date
     ( date
-    , ItemDate(..)
+    , dateWith
     ) where
 
 import Control.Applicative
@@ -11,31 +11,41 @@ import Control.Monad (forever, void)
 import Data.Time.Format
 import Data.Time.LocalTime
 
-import Graphics.UI.Gtk
+import qualified Graphics.UI.Gtk as Gtk
 
-import Moonbase.Core
+import Moonbase
+import Moonbase.Theme
+import Moonbase.Item
 import Moonbase.Panel.Gtk
 import Moonbase.Util.Gtk
 
 
+date :: String -> GtkPanelItem
+date fmt = item $ do
+        label <- io $ createDateWidget fmt 1 Nothing  
+        return (Gtk.toWidget label, Gtk.PackNatural)
 
-data ItemDate = ItemDate String (Maybe Label)
+dateWith :: String -> Int -> Color -> GtkPanelItem
+dateWith fmt poll color = item $ do
+        label <- io $ createDateWidget fmt poll (Just color)
+        return (Gtk.toWidget label, Gtk.PackNatural)
 
-instance PanelItem ItemDate where
-    getWidget (ItemDate _ (Just l)) = toWidget l
-    initItem (ItemDate fmt _) = do
-        l <- io $ labelNew (Just "-")
 
-        _ <- io $ on l realize $ void $
+createDateWidget :: String -> Int -> Maybe Color -> IO Gtk.Label
+createDateWidget fmt poll color = do
+        l <- io $ Gtk.labelNew (Just "-")
+        io $ Gtk.labelSetUseMarkup l True
+        _ <- io $ Gtk.on l Gtk.realize $ void $
             forkIO $ forever $ do
-                
-                postGUISync $ labelSetLabel l =<< formatTime defaultTimeLocale fmt <$> getZonedTime
-                threadDelay 1000000 -- one second 
+                str <- formatTime defaultTimeLocale fmt <$> getZonedTime 
+                Gtk.postGUISync $ Gtk.labelSetMarkup l $ format str
+                threadDelay (1000000 * poll)
+        return l
+  where
+      format str = case color of
+                        Just x  -> pangoColor x str
+                        Nothing -> str
 
-        return (ItemDate fmt (Just l), toWidget l) 
 
-date :: String -> Item
-date fmt = Item ("date=" ++ fmt) PackNatural $ ItemDate fmt Nothing
-        
-        
+
 
