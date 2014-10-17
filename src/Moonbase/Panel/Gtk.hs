@@ -102,6 +102,7 @@ destroyGtkPanel = return ()
 createPanel :: GtkPanelConfig -> Gtk.Display -> IO (Gtk.Window, Gtk.HBox)
 createPanel config disp = do
 
+     -- FIXME: Add monitor support not the whole screen!
      scr       <- Gtk.displayGetScreen disp $ panelOnMonitor config
      screenNum <- Gtk.displayGetNScreens disp
 

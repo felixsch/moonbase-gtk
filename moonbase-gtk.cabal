@@ -80,6 +80,7 @@ library
                      , moonbase >= 0.1.0.0
                      , xdg >= 0.1.0.0
                      , time >= 1.4.2
+                     , directory >= 1.2.0.1
                      , old-locale >= 1.0.0.5
   
   -- Directories containing source files.

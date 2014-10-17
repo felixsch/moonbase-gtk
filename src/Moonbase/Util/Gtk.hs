@@ -12,6 +12,7 @@ Some helper function to complete Gtk's functionality
 
 module Moonbase.Util.Gtk 
  ( iosync
+ , withDisplay
  , pangoColor
  , pangoSanitize
  , Position(..)
@@ -23,8 +24,8 @@ module Moonbase.Util.Gtk
  , parseColor'
  ) where
 
-
-import Control.Monad.Except
+import Control.Monad.Reader
+import Control.Applicative
 
 import Numeric (readHex)
 
@@ -33,6 +34,7 @@ import Data.Char (isHexDigit)
 import qualified Graphics.UI.Gtk as Gtk
 
 import Moonbase.Theme
+import Moonbase
 import Moonbase.Util.Gtk.StrutProperties
 
 
@@ -40,6 +42,16 @@ import Moonbase.Util.Gtk.StrutProperties
 data Position = Top -- ^ At top
   | Bottom -- ^ At bottom
   | Custom Int -- ^ At a custom position
+
+
+withDisplay :: (Functor m, MonadIO m, MonadSignal m) => (Gtk.Display -> m a) -> m (Maybe a)
+withDisplay f = do
+    disp <- liftIO $ Gtk.displayGetDefault
+    case disp of
+         Just d  -> Just <$> f d
+         Nothing -> push (FatalError "Could not open display") >> return Nothing
+
+
 
 
 -- | Wrapper arroung liftIO . Gtk.postGUISync
