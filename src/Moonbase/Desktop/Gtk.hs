@@ -2,7 +2,8 @@
 
 module Moonbase.Desktop.Gtk
   ( gtkDesktop
-  , BackgroundImage (..)
+  , onEvery
+  , wallpaper
   ) where
 
 import Control.Applicative
@@ -41,21 +42,33 @@ data BackgroundImage = BackgroundImage
 gtkDesktop :: GtkDesktopItem -> Moonbase ()
 gtkDesktop (Item desktop) = withComponent "gtkDesktop" $ newComponent Nothing $ do
 
+    withHooks [gtkInit, gtkMain, gtkQuit]
+
+    theme   <- moon $ getTheme
+
     windows <- withDisplay $ \disp -> do
+        setupCursor disp Gtk.Arrow
         screens <- liftIO $ getScreens disp
         monitorGeos <- liftIO $ getMonitorGeos screens
 
-        wins <- liftIO $ forM (concat monitorGeos) $ \(screen, geo) -> do
+        liftIO $ forM (concat monitorGeos) $ \(screen, geo) -> do
           win <- Gtk.windowNew
+
           Gtk.windowSetScreen win screen
-          setupDesktop win geo
+
+          Gtk.widgetModifyBg  win Gtk.StateNormal (parseColor $ bg theme)
+          Gtk.widgetModifyFg  win Gtk.StateNormal (parseColor $ normalC theme)
+
+          setupDesktop        win geo
+
           return win
-        return wins
+
     case windows of
          Nothing -> push (InitFailed True "Could not open display")
          Just x -> do
-             put windows
+             put (Just x)
              sequence_ desktop
+             mapM_ (iosync . Gtk.widgetShowAll) x
   where
       getScreens disp = do
           screenNum <- Gtk.displayGetNScreens disp
@@ -66,6 +79,17 @@ gtkDesktop (Item desktop) = withComponent "gtkDesktop" $ newComponent Nothing $ 
           forM [0..monitorNum - 1] $ \i -> do
               geo <- Gtk.screenGetMonitorGeometry screen i
               return (screen, geo)
+
+                
+setupCursor :: Gtk.Display -> Gtk.CursorType -> ComponentM st ()
+setupCursor disp cursorType = liftIO $ do
+    cursor    <- Gtk.cursorNewForDisplay disp cursorType
+    screenNum <- Gtk.displayGetNScreens disp
+    forM_ [0 .. (screenNum - 1)] $ \i -> do
+        scr  <- Gtk.displayGetScreen disp i
+        root <- Gtk.screenGetRootWindow scr
+        Gtk.drawWindowSetCursor root (Just cursor)
+
 
 
 setupDesktop :: Gtk.Window -> Gtk.Rectangle -> IO ()
@@ -91,9 +115,20 @@ getDesktop i = do
     windows <- get
     case windows of
          Nothing   -> return Nothing
-         Just wins -> return $ if (empty wins || i < 0 || i > length wins)
+         Just wins -> return $ if (null wins || i < 0 || i > length wins)
                                   then Nothing
-                                  else wins !! i
+                                  else Just $ wins !! i
+
+onEvery :: (Int -> GtkDesktopItem) -> GtkDesktopItem
+onEvery f = item $ do
+    mWindows <- get
+    case mWindows of
+         Nothing   -> return ()
+         Just wins -> forM_ [0.. length wins] $ \i -> do
+             let (Item item') = f i
+             sequence_ item'
+
+
 
 
 

@@ -1,5 +1,6 @@
 module Moonbase.Panel.Gtk.Item.CpuGraph
     ( cpuGraph
+    , cpuGraphWith
     ) where
 
 import Control.Applicative

@@ -10,6 +10,7 @@ module Moonbase.Panel.Gtk
     , gtkPanelState
     , gtkPanelGetBox
     , gtkPanel
+    , gtkPanel_
     ) where
 
 import Control.Applicative
@@ -75,10 +76,16 @@ gtkPanel genConfig (Item items) = do
        , panelFg           = normalC theme
        , panelFont         = normal theme
        }
+
+gtkPanel_ :: GtkPanelItem -> Moonbase ()
+gtkPanel_ = gtkPanel id
     
      
 initGtkPanel :: [ComponentM GtkPanel (Gtk.Widget, Gtk.Packing)] -> ComponentM GtkPanel ()
 initGtkPanel items = do
+
+    withHooks [gtkInit, gtkMain, gtkQuit]
+
     (config, st) <- get
     disp         <- checkDisplay =<< io Gtk.displayGetDefault
 
@@ -90,6 +97,8 @@ initGtkPanel items = do
 
     forM_ items' $ \(widget, packing) -> 
         io $ Gtk.boxPackStart box widget packing 0
+
+    iosync $ Gtk.widgetShowAll win
   where
       checkDisplay (Just disp) = return disp
       checkDisplay _           = initFailed True "Could not open display" >> error "Could not open display"

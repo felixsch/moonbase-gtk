@@ -1,6 +1,5 @@
 module Moonbase.Panel.Gtk.Item.Spacer
     ( spacer
-    , (<--->)
     ) where
 
 import qualified Graphics.UI.Gtk as Gtk
@@ -16,6 +15,3 @@ spacer = item $ do
   where
       labelNew' :: Maybe String -> IO Gtk.Label
       labelNew' = Gtk.labelNew
-
-(<--->) :: GtkPanelItem
-(<--->) = spacer
