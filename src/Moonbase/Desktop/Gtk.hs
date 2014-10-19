@@ -40,36 +40,38 @@ data BackgroundImage = BackgroundImage
 
 
 gtkDesktop :: GtkDesktopItem -> Moonbase ()
-gtkDesktop (Item desktop) = withComponent "gtkDesktop" $ newComponent Nothing $ do
+gtkDesktop (Item desktop) = do
+    addHooks [gtkInit, gtkMain, gtkQuit]
+    withComponent High "gtkDesktop" $ newComponent Nothing $ do
 
-    withHooks [gtkInit, gtkMain, gtkQuit]
+        theme   <- moon $ getTheme
 
-    theme   <- moon $ getTheme
+        windows <- withDisplay $ \disp -> do
+            setupCursor disp Gtk.Arrow
+            screens <- liftIO $ getScreens disp
+            monitorGeos <- liftIO $ getMonitorGeos screens
 
-    windows <- withDisplay $ \disp -> do
-        setupCursor disp Gtk.Arrow
-        screens <- liftIO $ getScreens disp
-        monitorGeos <- liftIO $ getMonitorGeos screens
+            liftIO $ forM (concat monitorGeos) $ \(screen, geo) -> do
+                win <- Gtk.windowNew
 
-        liftIO $ forM (concat monitorGeos) $ \(screen, geo) -> do
-          win <- Gtk.windowNew
+                Gtk.windowSetScreen win screen
 
-          Gtk.windowSetScreen win screen
+                Gtk.widgetModifyBg  win Gtk.StateNormal (parseColor $ bg theme)
+                Gtk.widgetModifyFg  win Gtk.StateNormal (parseColor $ normalC theme)
 
-          Gtk.widgetModifyBg  win Gtk.StateNormal (parseColor $ bg theme)
-          Gtk.widgetModifyFg  win Gtk.StateNormal (parseColor $ normalC theme)
+                setupDesktop        win geo
 
-          setupDesktop        win geo
+                Gtk.windowSetKeepBelow win True
 
-          return win
+                return win
 
-    case windows of
-         Nothing -> push (InitFailed True "Could not open display")
-         Just x -> do
-             put (Just x)
-             sequence_ desktop
-             mapM_ (iosync . Gtk.widgetShowAll) x
-  where
+        case windows of
+            Nothing -> push (InitFailed True "Could not open display")
+            Just x -> do
+                put (Just x)
+                sequence_ desktop
+                mapM_ (io . Gtk.widgetShowAll) x
+    where
       getScreens disp = do
           screenNum <- Gtk.displayGetNScreens disp
           mapM (Gtk.displayGetScreen disp) [0..screenNum -1]
@@ -100,11 +102,18 @@ setupDesktop win (Gtk.Rectangle x y w h) = do
     Gtk.windowSetGravity  win Gtk.GravityStatic
     Gtk.widgetSetCanFocus win False
 
+     
+    Gtk.set win [ Gtk.windowSkipTaskbarHint Gtk.:= True
+                , Gtk.windowSkipPagerHint Gtk.:= True
+                , Gtk.windowAcceptFocus Gtk.:= False
+                , Gtk.windowDecorated Gtk.:= False
+                , Gtk.windowHasResizeGrip Gtk.:= False
+                , Gtk.windowResizable Gtk.:= False ]
     Gtk.windowSetDefaultSize win w h
     Gtk.widgetSetSizeRequest win w h
     Gtk.windowResize win w h
 
-    Gtk.windowMove win 0 0
+    Gtk.windowMove win x y
     Gtk.windowSetGeometryHints win noWidget (Just (w,h)) (Just (w,h)) Nothing Nothing Nothing
     where
       noWidget                 = Nothing :: Maybe Gtk.Widget
@@ -115,7 +124,7 @@ getDesktop i = do
     windows <- get
     case windows of
          Nothing   -> return Nothing
-         Just wins -> return $ if (null wins || i < 0 || i > length wins)
+         Just wins -> return $ if (null wins || i < 0 || i > (length wins - 1))
                                   then Nothing
                                   else Just $ wins !! i
 
@@ -124,7 +133,7 @@ onEvery f = item $ do
     mWindows <- get
     case mWindows of
          Nothing   -> return ()
-         Just wins -> forM_ [0.. length wins] $ \i -> do
+         Just wins -> forM_ [0.. (length wins - 1) ] $ \i -> do
              let (Item item') = f i
              sequence_ item'
 

@@ -12,10 +12,10 @@ import Moonbase
 
 
 gtkInit :: Hook
-gtkInit = Hook "gtkinit" HookStart $ io (void initGUI)
+gtkInit = Hook "gtkinit" HookInit $ io (void initGUI)
 
 gtkMain :: Hook 
-gtkMain = Hook "gtkmain" HookAfterStartup $ io $ void $ forkIO mainGUI
+gtkMain = Hook "gtkmain" HookStart $ io $ void $ forkOS mainGUI
 
 gtkQuit :: Hook
 gtkQuit = Hook "gtkquit" HookExit $ io mainQuit

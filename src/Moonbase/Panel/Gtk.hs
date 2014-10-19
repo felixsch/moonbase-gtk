@@ -61,7 +61,9 @@ gtkPanelGetBox = panelHBox . snd <$> get
 gtkPanel :: (GtkPanelConfig -> GtkPanelConfig) -> GtkPanelItem -> Moonbase ()
 gtkPanel genConfig (Item items) = do
     theme <- getTheme
-    withComponent "gtkPanel" $
+
+    addHooks [gtkInit, gtkMain, gtkQuit]
+    withComponent High "gtkPanel" $
       newComponentWithCleanup (initialState theme) (initGtkPanel items) destroyGtkPanel   
  where
      initialState theme = (genConfig $ basicConfig theme, emptyState)
@@ -84,8 +86,6 @@ gtkPanel_ = gtkPanel id
 initGtkPanel :: [ComponentM GtkPanel (Gtk.Widget, Gtk.Packing)] -> ComponentM GtkPanel ()
 initGtkPanel items = do
 
-    withHooks [gtkInit, gtkMain, gtkQuit]
-
     (config, st) <- get
     disp         <- checkDisplay =<< io Gtk.displayGetDefault
 
@@ -98,7 +98,7 @@ initGtkPanel items = do
     forM_ items' $ \(widget, packing) -> 
         io $ Gtk.boxPackStart box widget packing 0
 
-    iosync $ Gtk.widgetShowAll win
+    ioasync $ Gtk.widgetShowAll win
   where
       checkDisplay (Just disp) = return disp
       checkDisplay _           = initFailed True "Could not open display" >> error "Could not open display"
@@ -127,6 +127,13 @@ createPanel config disp = do
      Gtk.widgetSetCanFocus win False
      Gtk.widgetModifyBg    win Gtk.StateNormal (parseColor $ panelBg config)
      Gtk.widgetModifyFg    win Gtk.StateNormal (parseColor $ panelFg config)
+
+     Gtk.set win [ Gtk.windowSkipTaskbarHint Gtk.:= True
+                 , Gtk.windowSkipPagerHint Gtk.:= True
+                 , Gtk.windowAcceptFocus Gtk.:= False
+                 , Gtk.windowDecorated Gtk.:= False
+                 , Gtk.windowHasResizeGrip Gtk.:= False
+                 , Gtk.windowResizable Gtk.:= False ]
 
      setPanelSize config win
 

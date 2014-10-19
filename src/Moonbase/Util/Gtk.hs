@@ -12,6 +12,7 @@ Some helper function to complete Gtk's functionality
 
 module Moonbase.Util.Gtk 
  ( iosync
+ , ioasync
  , withDisplay
  , pangoColor
  , pangoSanitize
@@ -52,12 +53,12 @@ withDisplay f = do
          Nothing -> push (FatalError "Could not open display") >> return Nothing
 
 
-
-
 -- | Wrapper arroung liftIO . Gtk.postGUISync
 iosync :: (MonadIO m) => IO a -> m a
 iosync = liftIO . Gtk.postGUISync
 
+ioasync :: (MonadIO m) => IO () -> m ()
+ioasync = liftIO . Gtk.postGUIAsync
 
 -- | Applys pango color formatting to a 'String'
 pangoColor :: String -> String -> String

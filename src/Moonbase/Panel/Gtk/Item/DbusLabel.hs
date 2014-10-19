@@ -26,7 +26,7 @@ xmonadLog = dbusLabel rule
           , matchInterface = Just interface
           , matchMember    = Just member }
         path      = DBus.objectPath_ "/org/moonbase/XMonadLog"
-        interface = DBus.interfaceName_ "org.xmonad.XMonadLog"
+        interface = DBus.interfaceName_ "org.moonbase.XMonadLog"
         member    = DBus.memberName_ "Update"
 
 
