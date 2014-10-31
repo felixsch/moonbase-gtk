@@ -1,14 +1,25 @@
 module Moonbase.Util.Gtk.Widget.Prompt
-        (
+        ( PromptComplFunc
+        , PromptExecFunc
+        , PromptExtension(..)
+        , PromptTheme(..)
+        , Prompt(..)
+        , promptWidgets
+        , promptTheme
+        , promptEntry
+        , promptNew
+        , promptShow
+        , promptHide
         ) where
 
 import Control.Monad
 
 
-import Moonbase.Util.Gtk.Color
+import Moonbase.Theme
+import Moonbase.Util.Gtk
 import Moonbase.Util.Gtk
 
-import Graphics.UI.Gtk
+import qualified Graphics.UI.Gtk as Gtk
 
 import System.IO.Unsafe
 
@@ -23,74 +34,74 @@ type PromptExecFunc  = (String -> IO ())
 data PromptExtension = PromptExtentsion String PromptComplFunc PromptExecFunc
 
 data PromptTheme = PromptTheme
-    { promptBackground :: HexColor
-    , promptForeground :: HexColor
+    { promptBackground :: Color
+    , promptForeground :: Color
     , promptHeight     :: Int
     , promptPosition   :: Position
 }
 
 
-type Prompt = Window
+type Prompt = Gtk.Window
 
-maybeWidgets :: Attr Prompt (Maybe (M.Map String Widget))
-maybeWidgets = unsafePerformIO $ objectCreateAttribute
+maybeWidgets :: Gtk.Attr Prompt (Maybe (M.Map String Gtk.Widget))
+maybeWidgets = unsafePerformIO $ Gtk.objectCreateAttribute
 {-# NOINLINE maybeWidgets #-}
 
 
-promptWidgets :: Attr Prompt (M.Map String Widget)
-promptWidgets = newAttr getWidgets setWidgets
+promptWidgets :: Gtk.Attr Prompt (M.Map String Gtk.Widget)
+promptWidgets = Gtk.newAttr getWidgets setWidgets
     where
         getWidgets obj = do
-            mWidgets <- get obj maybeWidgets
+            mWidgets <- Gtk.get obj maybeWidgets
             return $ fromMaybe M.empty mWidgets
 
         setWidgets obj widgets = do
-            set obj [maybeWidgets := Just widgets]
+            Gtk.set obj [maybeWidgets Gtk.:= Just widgets]
 
-maybeExtensions :: Attr Prompt (Maybe (M.Map String PromptExtension))
-maybeExtensions = unsafePerformIO $ objectCreateAttribute
+maybeExtensions :: Gtk.Attr Prompt (Maybe (M.Map String PromptExtension))
+maybeExtensions = unsafePerformIO $ Gtk.objectCreateAttribute
 {-# NOINLINE maybeExtensions #-}
 
-promptExtensions :: Attr Prompt (M.Map String PromptExtension)
-promptExtensions = newAttr getExts setExts
+promptExtensions :: Gtk.Attr Prompt (M.Map String PromptExtension)
+promptExtensions = Gtk.newAttr getExts setExts
     where
         getExts obj = do
-            mExts <- get obj maybeExtensions
+            mExts <- Gtk.get obj maybeExtensions
             return $ fromMaybe M.empty mExts
-        setExts obj exts = set obj [maybeExtensions := Just exts]
+        setExts obj exts = Gtk.set obj [maybeExtensions Gtk.:= Just exts]
 
-maybeTheme :: Attr Prompt (Maybe PromptTheme)
-maybeTheme = unsafePerformIO $ objectCreateAttribute
+maybeTheme :: Gtk.Attr Prompt (Maybe PromptTheme)
+maybeTheme = unsafePerformIO $ Gtk.objectCreateAttribute
 {-# NOINLINE maybeTheme #-}
 
-promptTheme :: ReadAttr Prompt PromptTheme
-promptTheme = readAttr $ \obj -> do
-    mTheme <- get obj maybeTheme
+promptTheme :: Gtk.ReadAttr Prompt PromptTheme
+promptTheme = Gtk.readAttr $ \obj -> do
+    mTheme <- Gtk.get obj maybeTheme
     if isNothing mTheme
        then error $ "Could not load theme..."
        else return $ fromJust mTheme
 
 
 
-maybeEntry :: Attr Prompt (Maybe Entry)
-maybeEntry = unsafePerformIO $ objectCreateAttribute
+maybeEntry :: Gtk.Attr Prompt (Maybe Gtk.Entry)
+maybeEntry = unsafePerformIO $ Gtk.objectCreateAttribute
 {-# NOINLINE maybeEntry #-}
 
-promptEntry :: ReadAttr Prompt Entry
-promptEntry = readAttr $ \obj -> do
-    mEntry <- get obj maybeEntry
+promptEntry :: Gtk.ReadAttr Prompt Gtk.Entry
+promptEntry = Gtk.readAttr $ \obj -> do
+    mEntry <- Gtk.get obj maybeEntry
     if isNothing mEntry
        then error $ "Could not get entry..."
        else return $ fromJust mEntry
 
 
-maybeView :: Attr Prompt (Maybe TreeView)
-maybeView = unsafePerformIO $ objectCreateAttribute
+maybeView :: Gtk.Attr Prompt (Maybe Gtk.TreeView)
+maybeView = unsafePerformIO $ Gtk.objectCreateAttribute
 {-# NOINLINE maybeView #-}
 
-promptView :: ReadAttr Prompt TreeView
-promptView = readAttr $ \obj -> do
-    mView <- get obj maybeView
+promptView :: Gtk.ReadAttr Prompt Gtk.TreeView
+promptView = Gtk.readAttr $ \obj -> do
+    mView <- Gtk.get obj maybeView
     if isNothing mView
        then error $ "Could not get view..."
        else return $ fromJust mView
@@ -99,24 +110,59 @@ promptView = readAttr $ \obj -> do
 promptNew :: PromptTheme -> IO Prompt
 promptNew theme = do
 
-   scr <- check =<< screenGetDefault
+   scr <- check =<< Gtk.screenGetDefault
 
-   prompt  <- windowNew
+   prompt  <- Gtk.windowNew
 
-   widgetSetName prompt "Prompt"
+   Gtk.widgetSetName prompt "Prompt"
 
-   windowSetScreen prompt scr
-   windowSetKeepAbove prompt True
-   windowSetTypeHint prompt WindowTypeHintPopupMenu
+   Gtk.set prompt [ Gtk.windowSkipTaskbarHint Gtk.:= True
+                  , Gtk.windowSkipPagerHint Gtk.:= True
+                  , Gtk.windowAcceptFocus Gtk.:= True
+                  , Gtk.windowDecorated Gtk.:= False
+                  , Gtk.windowHasResizeGrip Gtk.:= False
+                  , Gtk.windowResizable Gtk.:= False 
+                  , Gtk.windowRole Gtk.:= "MoonbasePrompt" ]
 
-   widgetModifyBg prompt StateNormal (parseColor $ promptBackground theme)
-   widgetModifyFg prompt StateNormal (parseColor $ promptForeground theme)
+   Gtk.windowSetScreen prompt scr
+   Gtk.windowSetKeepAbove prompt True
+   Gtk.windowSetTypeHint prompt Gtk.WindowTypeHintMenu
+
+
+   Gtk.widgetModifyBg prompt Gtk.StateNormal (parseColor $ promptBackground theme)
+   Gtk.widgetModifyFg prompt Gtk.StateNormal (parseColor $ promptForeground theme)
 
    setSize prompt
 
-   _ <- on scr screenMonitorsChanged $ setSize prompt
+   _ <- Gtk.on scr Gtk.screenMonitorsChanged $ setSize prompt
 
-   -- implement me
+   view  <- Gtk.treeViewNew
+   entry <- Gtk.entryNew
+   Gtk.entrySetHasFrame entry False
+
+   Gtk.widgetModifyBg entry Gtk.StateNormal (parseColor $ promptBackground theme)
+   Gtk.widgetModifyFg entry Gtk.StateNormal (parseColor $ promptForeground theme)
+
+   typLabel <- Gtk.labelNew (Just ">>")
+   matchesLabel <- Gtk.labelNew (Just "0 matches")
+   
+   Gtk.labelSetMarkup typLabel "<b><span color=\"#ff0000\">::</span></b>"
+   
+   hbox <- Gtk.hBoxNew False 1
+   vbox <- Gtk.vBoxNew False 1
+
+   Gtk.boxPackStart hbox typLabel Gtk.PackNatural 1
+   Gtk.boxPackStart hbox entry Gtk.PackGrow 1
+   Gtk.boxPackStart hbox matchesLabel Gtk.PackNatural 1
+
+   Gtk.containerAdd vbox view
+   Gtk.containerAdd vbox hbox
+
+   Gtk.containerAdd prompt vbox
+
+   Gtk.set prompt [ maybeTheme Gtk.:= Just theme
+                  , maybeEntry Gtk.:= Just entry
+                  , maybeView  Gtk.:= Just view ]
 
    return prompt
 
@@ -128,32 +174,31 @@ promptNew theme = do
        setSize          = setPromptSize (promptPosition theme) (promptHeight theme)
 
 
-setPromptSize :: Position -> Int -> Window -> IO ()
+setPromptSize :: Position -> Int -> Gtk.Window -> IO ()
 setPromptSize pos height prompt = do
-    scr      <- windowGetScreen prompt
+    scr      <- Gtk.windowGetScreen prompt
     (mX, mY) <- getAbsoluteMousePosition scr
-    mo       <- screenGetMonitorAtPoint scr mX mY
+    mo       <- Gtk.screenGetMonitorAtPoint scr mX mY
 
-    moSelGeo@(Rectangle x y w h) <- screenGetMonitorGeometry scr mo
+    moSelGeo@(Gtk.Rectangle x y w h) <- Gtk.screenGetMonitorGeometry scr mo
 
-    windowSetDefaultSize prompt w height
-    widgetSetSizeRequest prompt w height
-    windowResize prompt w height
+    Gtk.windowSetDefaultSize prompt w height
+    Gtk.widgetSetSizeRequest prompt w height
+    Gtk.windowResize prompt w height
 
-    moveWindow prompt pos height moSelGeo
-
-    _ <- on prompt realize $ setWindowStruts prompt pos height moSelGeo
-    
-    isRealized <- widgetGetRealized prompt
-    when isRealized $ setWindowStruts prompt pos height moSelGeo
-
+    moveWindow prompt pos moSelGeo
     
 
 promptShow :: Prompt -> IO ()
-promptShow = undefined
+promptShow pr = ioasync $ do
+        Gtk.widgetShowAll pr
+        entry <- Gtk.get pr promptEntry
+        Gtk.windowPresent pr
+        Gtk.widgetGrabFocus entry
 
 promptHide :: Prompt -> IO ()
-promptHide = undefined
+promptHide pr = do
+    ioasync $ Gtk.widgetHide pr
 
 promptAddEx :: Prompt -> PromptExtension -> IO ()
 promptAddEx = undefined
