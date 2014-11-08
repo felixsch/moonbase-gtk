@@ -177,7 +177,7 @@ setStyle w name settings = do
 
     Gtk.cssProviderLoadFromString provider css
 
-    Gtk.styleContextAddProvider context provider 50
+    Gtk.styleContextAddProvider context provider 800
  where
     parsedList ((k, p) : xs) = (k ++ ": " ++ p ++ ";") : parsedList xs
     parsedList []          = []
