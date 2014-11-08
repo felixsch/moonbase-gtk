@@ -23,6 +23,7 @@ module Moonbase.Util.Gtk
  , getAbsoluteMousePosition
  , parseColor
  , parseColor'
+ , setStyle
  ) where
 
 import Control.Monad.Reader
@@ -33,6 +34,8 @@ import Numeric (readHex)
 import Data.Char (isHexDigit)
 
 import qualified Graphics.UI.Gtk as Gtk
+import qualified Graphics.UI.Gtk.General.StyleContext as Gtk
+import qualified Graphics.UI.Gtk.General.CssProvider as Gtk
 
 import Moonbase.Theme
 import Moonbase
@@ -161,4 +164,25 @@ parseColor' s@['#', r1, r2, g1, g2, b1, b2]
   | otherwise               = parseColor' magenta
   where hexify = fst . head . readHex
 parseColor' _              = parseColor' magenta
+
+
+
+
+setStyle :: (Gtk.WidgetClass widget) =>  widget -> String -> [(String, String)] -> IO ()
+setStyle w name settings = do
+    Gtk.widgetSetName w name
+
+    provider <- Gtk.cssProviderNew 
+    context  <- Gtk.widgetGetStyleContext w
+
+    Gtk.cssProviderLoadFromString provider css
+
+    Gtk.styleContextAddProvider context provider 50
+ where
+    parsedList ((k, p) : xs) = (k ++ ": " ++ p ++ ";") : parsedList xs
+    parsedList []          = []
+
+    css = "#" ++ name ++ " {"
+        ++ unwords (parsedList settings) 
+        ++ "}"
 

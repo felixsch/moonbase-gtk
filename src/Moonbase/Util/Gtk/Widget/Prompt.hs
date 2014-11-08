@@ -13,6 +13,7 @@ module Moonbase.Util.Gtk.Widget.Prompt
         ) where
 
 import Control.Monad
+import Control.Monad.Reader
 
 
 import Moonbase.Theme
@@ -140,8 +141,7 @@ promptNew theme = do
    entry <- Gtk.entryNew
    Gtk.entrySetHasFrame entry False
 
-   Gtk.widgetModifyBg entry Gtk.StateNormal (parseColor $ promptBackground theme)
-   Gtk.widgetModifyFg entry Gtk.StateNormal (parseColor $ promptForeground theme)
+   setStyle entry "promptEntry" [ ("background", color_ $ promptBackground theme) ]
 
    typLabel <- Gtk.labelNew (Just ">>")
    matchesLabel <- Gtk.labelNew (Just "0 matches")
@@ -164,6 +164,12 @@ promptNew theme = do
                   , maybeEntry Gtk.:= Just entry
                   , maybeView  Gtk.:= Just view ]
 
+   -- Add escape button to close window
+   _ <- Gtk.on prompt Gtk.keyPressEvent $ Gtk.tryEvent $ do
+       "Escape" <- Gtk.eventKeyName
+       time     <- Gtk.eventTime
+       liftIO $ promptHide time prompt
+
    return prompt
 
     
@@ -173,6 +179,9 @@ promptNew theme = do
 
        setSize          = setPromptSize (promptPosition theme) (promptHeight theme)
 
+
+foreachState :: (Gtk.StateType -> Gtk.Color -> IO ()) -> Gtk.Color -> IO ()
+foreachState f c = mapM_ (\s -> f s c) [Gtk.StateNormal, Gtk.StateActive]
 
 setPromptSize :: Position -> Int -> Gtk.Window -> IO ()
 setPromptSize pos height prompt = do
@@ -191,14 +200,35 @@ setPromptSize pos height prompt = do
 
 promptShow :: Prompt -> IO ()
 promptShow pr = ioasync $ do
-        Gtk.widgetShowAll pr
+
+        Gtk.widgetShowAll pr 
+
         entry <- Gtk.get pr promptEntry
+        mWin  <- Gtk.widgetGetWindow pr
+
         Gtk.windowPresent pr
         Gtk.widgetGrabFocus entry
 
-promptHide :: Prompt -> IO ()
-promptHide pr = do
-    ioasync $ Gtk.widgetHide pr
+        case mWin of
+             Nothing  -> return ()
+             Just win -> do
+                 Gtk.keyboardGrab win True Gtk.currentTime
+                 Gtk.pointerGrab win True [Gtk.AllEventsMask] noWindow Nothing Gtk.currentTime
+                 return ()
+
+noWindow :: Maybe Gtk.DrawWindow
+noWindow = Nothing
+
+        
+
+promptHide :: Gtk.TimeStamp -> Prompt -> IO ()
+promptHide time pr = ioasync $ do
+       isPointerGrabbed <- Gtk.pointerIsGrabbed
+
+       when isPointerGrabbed $ Gtk.pointerUngrab time
+       Gtk.keyboardUngrab time
+
+       Gtk.widgetHide pr
 
 promptAddEx :: Prompt -> PromptExtension -> IO ()
 promptAddEx = undefined

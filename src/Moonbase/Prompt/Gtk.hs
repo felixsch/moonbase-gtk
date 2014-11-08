@@ -2,6 +2,7 @@
 
 module Moonbase.Prompt.Gtk
   ( prompt
+  , showPrompt
   , PromptTheme(..)
   ) where
 
@@ -12,6 +13,8 @@ import Moonbase.Theme
 import Moonbase.Hook.Gtk
 import Moonbase.Util.Gtk.Widget.Prompt
 import Moonbase.Util.Gtk
+
+import qualified Graphics.UI.Gtk as Gtk
 
 import DBus
 import DBus.Client
@@ -41,13 +44,19 @@ initPrompt theme = do
 
     moon $ addDBusMethod (withObjectPath "Prompt") $ \ ref ->
       [ autoMethod promptInterface "Show" (wrap0 ref (ioasync $ promptShow prompt))
-      , autoMethod promptInterface "Hide" (wrap0 ref (ioasync $ promptHide prompt)) ]
+      , autoMethod promptInterface "Hide" (wrap0 ref (ioasync $ promptHide Gtk.currentTime prompt)) ]
 
     return ()
 
-promptInterface = interfaceName_ $ formatInterfaceName moonInterface ++ ".TestPrompt"
-    
+promptInterface = interfaceName_ $ formatInterfaceName moonInterface ++ ".Prompt"
 
+
+showPrompt :: IO ()
+showPrompt = do
+    client <- connectSession
+    callNoReply client (methodCall (withObjectPath "Prompt") (withInterface "Prompt") "Show")
+      { methodCallDestination = Just moonBusName
+      }
 
 
 
