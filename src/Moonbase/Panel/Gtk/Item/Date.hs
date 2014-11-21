@@ -7,7 +7,7 @@ import Control.Applicative
 import Control.Concurrent
 import Control.Monad (forever, void)
 
-
+import System.Locale
 import Data.Time.Format
 import Data.Time.LocalTime
 

@@ -42,7 +42,7 @@ data GraphConfig = GraphConfig
   , graphWidth       :: Int
   , graphColor       :: Moon.Color
   , graphBorder      :: Maybe (Int, Moon.Color)
-  , graphBackground  :: Maybe Moon.Color
+  , graphBackground  :: Moon.Color
   }
 
 
@@ -54,7 +54,7 @@ defaultGraphConfig = GraphConfig
   , graphWidth      = 128
   , graphColor      = "#ff0000"
   , graphBorder     = Just (1, "#0000ff")
-  , graphBackground = Nothing -- Just "#00ff00"
+  , graphBackground = "#24ff25"
   }
 
 type GraphHistory = S.Seq Double
@@ -145,22 +145,18 @@ getSize graph = do
 
 drawGraph :: Int -> Int -> GraphConfig -> GraphHistory -> Render ()
 drawGraph w h conf hist = do
-    when hasBackground $ renderBackground w h (fromJust $ graphBackground conf)
+    renderBackground w h (graphBackground conf)
     when hasBorder     $ renderBorder     w h (graphPadding conf) (fromJust $ graphBorder conf)
 
     case graphStyle conf of
         LineGraph       -> renderLineGraph      w h (graphPadding conf) (graphColor conf) hist
         AreaGraph tran  -> renderAreaGraph tran w h (graphPadding conf) (graphColor conf) hist
-
     where
-        hasBackground = isJust $ graphBackground conf
         hasBorder     = isJust $ graphBorder     conf
 
 
-
-
 renderBackground :: Int -> Int -> Moon.Color -> Render ()
-renderBackground w h c = setSourceRGB r g b >> rectangle 0 0 (fromIntegral w) (fromIntegral h) >> paint
+renderBackground w h c = setSourceRGB r g b >> rectangle 0 0 (fromIntegral w) (fromIntegral h) >> fill
     where
         (r, g, b) = parseColor' c
 

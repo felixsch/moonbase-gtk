@@ -33,6 +33,7 @@ cpuGraphWith config poll = item $ do
 cpuGraph :: Int -> GtkPanelItem 
 cpuGraph poll = item $ do
     theme <- moon $ getTheme
+    moon $ push (Info $ "bg = " ++ bg theme)
     graph <- io $ pollingGraphNew (genConfig theme) poll cpuFetchInfo
     return (Gtk.toWidget graph, Gtk.PackNatural)
   where
@@ -41,9 +42,9 @@ cpuGraph poll = item $ do
         , graphDirection  = GraphLeftToRight
         , graphStyle      = LineGraph
         , graphWidth      = 120
-        , graphColor      = hlC2 theme
+        , graphColor      = activeC theme
         , graphBorder     = Nothing
-        , graphBackground = Nothing }
+        , graphBackground = bg theme }
 
 truncVal :: Double -> Double
 truncVal v

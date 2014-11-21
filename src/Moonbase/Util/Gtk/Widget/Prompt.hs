@@ -143,6 +143,8 @@ promptNew theme = do
 
    setStyle entry "promptEntry" [ ("background", color_ $ promptBackground theme) ]
 
+   Gtk.widgetModifyFg entry Gtk.StateNormal (parseColor $ promptForeground theme)
+
    typLabel <- Gtk.labelNew (Just ">>")
    matchesLabel <- Gtk.labelNew (Just "0 matches")
    

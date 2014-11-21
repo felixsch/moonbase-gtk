@@ -160,7 +160,7 @@ parseColor _ = parseColor magenta
 parseColor' :: Color -> (Double, Double, Double)
 parseColor' ['#', r, g, b] = parseColor' ['#', r, r, b, b, g, g]
 parseColor' s@['#', r1, r2, g1, g2, b1, b2]
-  | all isHexDigit (tail s) = (hexify [r1,r2], hexify [g1, g2], hexify [b1, b2])
+  | all isHexDigit (tail s) = (hexify [r1,r2] / 255 , hexify [g1, g2] / 255 , hexify [b1, b2] / 255)
   | otherwise               = parseColor' magenta
   where hexify = fst . head . readHex
 parseColor' _              = parseColor' magenta
