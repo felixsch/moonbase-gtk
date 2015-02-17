@@ -74,9 +74,9 @@ library
   build-depends:       base >=4.6 && <4.8
                      , containers >= 0.5.0.0
                      , mtl >= 2.1.2
-                     , gtk3 == 0.12.5.7
-                     , glib >= 0.12.5.4
-                     , cairo >= 0.12.5.3
+                     , gtk3
+                     , glib
+                     , cairo
                      , dbus >= 0.10.7
                      , moonbase >= 0.1.0.0
                      , xdg >= 0.1.0.0
